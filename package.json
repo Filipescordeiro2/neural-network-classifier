@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "types": "module",
   "scripts": {
     "start": "node --no-warnings --watch index.js",
