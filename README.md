@@ -115,6 +115,8 @@ node riskAnalysis.js
 ```
 
 ### 3. Saída Esperada
+**Nota**: Esta é a saída esperada baseada na execução real do programa. Os valores de probabilidade podem variar ligeiramente devido à natureza estocástica do treinamento neural.
+
 ```
 🧠 Iniciando treinamento do modelo com amostras de análise...
 
@@ -132,9 +134,9 @@ node riskAnalysis.js
 
 🎯 ANÁLISE DE RISCO:
 
-1. 🔴 ALTO: 75.32%
-2. 🟡 MÉDIO: 18.45%
-3. 🟢 BAIXO: 6.23%
+1. 🔴 ALTO: 95.61%
+2. 🟢 BAIXO: 3.71%
+3. 🟡 MEDIO: 0.68%
 
 ⚠️  Risco Principal: ALTO
 
@@ -233,5 +235,5 @@ Filipe - Pós-Graduação em Inteligência Artificial
 ---
 
 **Data**: 10 de março de 2026  
-**Status**: ✅ Funcional | 🎓 Exercício Educacional</content>
+**Status**: ✅ Funcional | 🎓 Exercício Educacional | 📊 Testado com 95.61% confiança no risco alto</content>
 <filePath">/home/filipe/Área de trabalho/Pos/exemplo-00/README.md
