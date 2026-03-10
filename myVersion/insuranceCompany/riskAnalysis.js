@@ -198,15 +198,15 @@ async function trainAndSayRisk() {
     
     const novaPessoa = {
         nome: 'FILIPE TESTE',
-        idade: 50,
+        idade: 18,
         sexo: 1,
-        faixa18_24: 0,
+        faixa18_24: 1,
         faixa25_30: 0,
         faixa30_45: 0,
-        faixa46mais: 1,
-        primeiroCarro: 0,
-        habProvisoria: 0,
-        habDefinitiva: 1,
+        faixa46mais: 0,
+        primeiroCarro: 1,
+        habProvisoria: 1,
+        habDefinitiva: 0,
         localizacao: 'SP'
     };
 
