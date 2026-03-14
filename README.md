@@ -2,238 +2,278 @@
 
 **Exercício Prático - Pós-Graduação em Inteligência Artificial**
 
-Este é um projeto educacional desenvolvido como exercício prático da pós-graduação em Inteligência Artificial. O projeto demonstra a aplicação de **aprendizado de máquina supervisionado** para classificação multiclasse usando TensorFlow.js.
+Este projeto demonstra a aplicação de **Machine Learning
+supervisionado** para análise de risco de seguro utilizando
+**TensorFlow.js no Node.js**.
 
----
+O sistema simula um **motor de decisão de risco semelhante aos
+utilizados por seguradoras**, classificando motoristas em categorias de
+risco com base em características demográficas e comportamentais.
 
-## 📋 Estrutura do Projeto
+------------------------------------------------------------------------
 
-```
-exemplo-00/
-├── aula/                          # Aulas teóricas e exemplos base
-│   ├── aula.js                   # Exemplo inicial
-│   └── aulav2.js                 # Modelo base com 3 features (cor, localização)
-│
-├── myVersion/                     # 🎯 PRÁTICA - Implementação do aprendizado
-│   └── insuranceCompany/
-│       └── riskAnalysis.js        # Análise de risco de seguro (36 features)
-│
-├── README.md                      # Este arquivo
-└── package.json                   # Dependências do projeto
-```
+# 📋 Estrutura do Projeto
+
+    exemplo-00/
+    ├── aula/
+    │   ├── aula.js
+    │   └── aulav2.js
+    │
+    ├── myVersion/
+    │   └── insuranceCompany/
+    │       ├── riskAnalysis.js
+    │       ├── generateDataset.js
+    │       └── trainingData.json
+    │
+    ├── README.md
+    └── package.json
 
 ### Estrutura de Aprendizado
-- **`aula/`**: Contém exemplos teóricos e o modelo original simples (`aulav2.js`)
-- **`myVersion/`**: Pasta onde os conceitos aprendidos foram praticados e expandidos, implementando uma solução mais complexa e realista de análise de risco de seguro
 
----
+  Pasta                  Descrição
+  ---------------------- ----------------------------------------------
+  `aula/`                Exemplos didáticos utilizados na aula
+  `myVersion/`           Implementação prática desenvolvida
+  `riskAnalysis.js`      Script principal da rede neural
+  `generateDataset.js`   Gerador automático de dataset
+  `trainingData.json`    Dataset persistente utilizado no treinamento
 
-## 🎯 Objetivo
+------------------------------------------------------------------------
 
-Desenvolver um modelo de rede neural que classifique motoristas em **3 categorias de risco de seguro**:
-- 🟢 **BAIXO**: Motoristas com baixo risco (experiência, habilitação definitiva, idade avançada)
-- 🟡 **MÉDIO**: Motoristas com risco intermediário
-- 🔴 **ALTO**: Motoristas com alto risco (jovens, inexperientes, habilitação provisória)
+# 🎯 Objetivo
 
----
+Criar um modelo capaz de classificar motoristas em **3 categorias de
+risco**:
 
-## 🧠 Modelo de Machine Learning
+  Categoria      Significado
+  -------------- ------------------------------------
+  🟢 **BAIXO**   Motoristas experientes
+  🟡 **MÉDIO**   Motoristas intermediários
+  🔴 **ALTO**    Motoristas jovens ou inexperientes
+
+------------------------------------------------------------------------
+
+# 🧠 Modelo de Machine Learning
 
 ### Arquitetura da Rede Neural
-```
-Entrada (36 features)
-    ↓
-Camada Densa (ReLU, 100 neurônios)
-    ↓
-Camada Saída (Softmax, 3 neurônios)
-    ↓
-Probabilidades [baixo, médio, alto]
-```
+
+    Entrada (36 features)
+            ↓
+    Camada Oculta (Dense + ReLU)
+            ↓
+    Camada de Saída (Softmax)
+            ↓
+    Probabilidades [baixo, médio, alto]
 
 ### Configuração
-- **Input Shape**: 36 features
-- **Hidden Units**: 100 neurônios
-- **Output Units**: 3 classes
-- **Epochs**: 200 iterações
-- **Otimizador**: Adam
-- **Loss Function**: Categorical Crossentropy
-- **Framework**: TensorFlow.js (Node.js)
 
----
+  Parâmetro      Valor
+  -------------- --------------------------
+  Input Shape    36
+  Hidden Units   50
+  Output Units   3
+  Epochs         150
+  Otimizador     Adam
+  Loss           Categorical Crossentropy
 
-## 📊 Features (Características de Entrada)
+Framework utilizado:
 
-Cada motorista é representado por **36 features**:
+-   TensorFlow.js
+-   Node.js
 
-### 1️⃣ Características Demográficas e Comportamentais (0-8)
-| Posição | Feature | Tipo | Valores |
-|---------|---------|------|---------|
-| 0 | Idade Normalizada | Float | [0.0 - 1.0] |
-| 1 | Sexo | Binário | 1=Masculino, 0=Feminino |
-| 2-5 | Faixas Etárias | One-Hot | [18-24], [25-30], [30-45], [>46] |
-| 6 | Primeiro Carro | Binário | 1=Sim, 0=Não |
-| 7 | Habilitação Provisória | Binário | 1=Sim, 0=Não |
-| 8 | Habilitação Definitiva | Binário | 1=Sim, 0=Não |
+------------------------------------------------------------------------
 
-### 2️⃣ Localização Geográfica (9-35)
-**One-hot encoding para 27 UFs brasileiras** (em ordem alfabética):
+# 📊 Features Utilizadas
+
+Cada motorista é representado por **36 características**.
+
+## 1️⃣ Dados Demográficos
+
+  Feature                  Tipo
+  ------------------------ ---------
+  Idade Normalizada        Float
+  Sexo                     Binário
+  Faixa 18--24             One-Hot
+  Faixa 25--30             One-Hot
+  Faixa 31--45             One-Hot
+  Faixa \>45               One-Hot
+  Primeiro Carro           Binário
+  Habilitação Provisória   Binário
+  Habilitação Definitiva   Binário
+
+------------------------------------------------------------------------
+
+## 2️⃣ Localização
+
+One-hot encoding para **27 estados brasileiros**:
+
+    AC, AL, AP, AM, BA, CE, DF, ES, GO,
+    MA, MT, MS, MG, PA, PB, PR, PE, PI,
+    RJ, RN, RS, RO, RR, SC, SP, SE, TO
+
+------------------------------------------------------------------------
+
+# 📚 Dataset Persistente
+
+O projeto utiliza **aprendizado incremental**.
+
+Cada nova análise salva um registro no dataset.
+
+Arquivo:
+
+    trainingData.json
+
+### Estrutura do Dataset
+
+``` json
+{
+  "dataset": [
+    {
+      "input": {
+        "nome": "Pessoa_1",
+        "idade": 22,
+        "sexo": "M",
+        "primeiroCarro": true,
+        "habilitacao": "PROVISORIA",
+        "estado": "SP"
+      },
+      "features": [...],
+      "label": [0,0,1],
+      "risk": "alto",
+      "createdAt": "2026-03-14T22:05:00.000Z"
+    }
+  ]
+}
 ```
-AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO
+
+Cada registro contém:
+
+  Campo       Descrição
+  ----------- ---------------------------------
+  input       dados brutos do motorista
+  features    dados transformados para a rede
+  label       vetor one-hot da classe
+  risk        classificação textual
+  createdAt   data da análise
+
+------------------------------------------------------------------------
+
+# 🤖 Aprendizado Contínuo
+
+Fluxo do sistema:
+
+    Usuário fornece dados
+            ↓
+    Sistema normaliza as features
+            ↓
+    Rede neural faz previsão
+            ↓
+    Resultado exibido
+            ↓
+    Dados salvos no JSON
+            ↓
+    Próximo treinamento usa mais dados
+
+------------------------------------------------------------------------
+
+# ⚙️ Gerador Automático de Dataset
+
+Script criado para gerar um dataset inicial maior.
+
+Arquivo:
+
+    generateDataset.js
+
+### Gerar Dataset
+
+``` bash
+node generateDataset.js
 ```
 
----
+Saída esperada:
 
-## 📚 Dados de Treinamento
+    trainingData.json criado com 200 registros
 
-O modelo foi treinado com **9 amostras** de motoristas com padrões variados:
+------------------------------------------------------------------------
 
-| Nome | Idade | Sexo | Experiência | Risco |
-|------|-------|------|-------------|-------|
-| FILIPE | 24 | M | Primeiro carro, prov. | 🔴 ALTO |
-| OTAVIO | 18 | M | Primeiro carro, prov. | 🔴 ALTO |
-| PEDRO | 22 | M | Primeiro carro, prov. | 🔴 ALTO |
-| MARIA | 28 | F | Experiente, def. | 🟡 MÉDIO |
-| ANA | 35 | F | Experiente, def. | 🟡 MÉDIO |
-| SARA | 38 | F | Experiente, def. | 🟡 MÉDIO |
-| JOÃO | 42 | M | Experiente, def. | 🟢 BAIXO |
-| CARLOS | 50 | M | Experiente, def. | 🟢 BAIXO |
-| LUCIA | 55 | F | Experiente, def. | 🟢 BAIXO |
+# 🚀 Executar o Projeto
 
----
+## 1️⃣ Instalar dependências
 
-## 🚀 Como Executar
-
-### 1. Instalação de Dependências
-```bash
+``` bash
 npm install @tensorflow/tfjs-node
 ```
 
-### 2. Executar o Modelo
-```bash
-cd myVersion/insuranceCompany
+## 2️⃣ Gerar dataset inicial
+
+``` bash
+node generateDataset.js
+```
+
+## 3️⃣ Executar análise de risco
+
+``` bash
 node riskAnalysis.js
 ```
 
-### 3. Saída Esperada
-**Nota**: Esta é a saída esperada baseada na execução real do programa. Os valores de probabilidade podem variar ligeiramente devido à natureza estocástica do treinamento neural.
+------------------------------------------------------------------------
 
-```
-🧠 Iniciando treinamento do modelo com amostras de análise...
+# 🖥️ Exemplo de Execução
 
-⏳ Modelo analisando 9 amostras de motoristas...
-✅ Análise das amostras concluída!
+    🧠 Treinando modelo...
 
-📋 Analisando novo motorista:
+    📊 Dataset usado: 200 amostras
 
-👤 Nome: FILIPE TESTE
-📅 Idade: 18 anos
-🏠 Localização: SP
-👨 Sexo: Masculino
-🚗 Primeiro Carro: Sim
-📜 Habilitação: Provisória
+    Nome: Filipe
+    Idade: 23
+    Sexo (M/F): M
+    Primeiro carro? (S/N): S
+    Habilitação provisória? (S/N): S
+    Estado (ex SP): SP
 
-🎯 ANÁLISE DE RISCO:
+    🎯 RESULTADO
 
-1. 🔴 ALTO: 95.61%
-2. 🟢 BAIXO: 3.71%
-3. 🟡 MEDIO: 0.68%
+    1. 🔴 ALTO 92.45%
+    2. 🟡 MEDIO 5.23%
+    3. 🟢 BAIXO 2.32%
 
-⚠️  Risco Principal: ALTO
+    ⚠️ Risco principal: ALTO
 
-✅ Análise finalizada!
-```
+    📦 Registro salvo no dataset
 
----
+------------------------------------------------------------------------
 
-## 🔍 Detalhamento Técnico: Normalização de Features
+# 💡 Conceitos de IA Aplicados
 
-### Age (Idade)
-$$\text{idadeNormalizada} = \frac{\text{idade} - 18}{60 - 18}$$
+-   Normalização de dados
+-   One-Hot Encoding
+-   Redes neurais densas
+-   Classificação multiclasse
+-   Softmax
+-   Crossentropy
+-   Treinamento supervisionado
+-   Dataset incremental
+-   Feature engineering
 
-**Exemplo**: 24 anos → (24-18)/42 ≈ 0.143
+------------------------------------------------------------------------
 
-### Faixas Etárias (One-Hot)
-Para 24 anos:
-```javascript
-[1, 0, 0, 0]  // [18-24, 25-30, 30-45, >46]
-```
+# 📈 Possíveis Melhorias Futuras
 
-### Localização (One-Hot)
-Para São Paulo (SP, índice 24):
-```javascript
-[0, 0, 0, ..., 1, 0, 0]  // 27 elementos, SP na posição 24
-```
+-   Aumentar dataset para **1000+ registros**
+-   Implementar **score numérico de risco**
+-   Criar **API REST**
+-   Salvar e carregar **modelo treinado**
+-   Criar **dashboard web**
+-   Implementar **validação do modelo**
 
----
+------------------------------------------------------------------------
 
-## 📁 Arquivos Principais
+# 👨‍🎓 Autor
 
-### `aula/aulav2.js`
-- **Propósito**: Modelo base educacional
-- **Features**: 7 (idade, 3 cores, 3 localizações)
-- **Categoria**: premium, medium, basic
-- **Amostras**: 3 pessoas
+**Filipe Santana Cordeiro**\
+Pós‑Graduação em Inteligência Artificial
 
-### `myVersion/insuranceCompany/riskAnalysis.js`
-- **Propósito**: Modelo prático de análise de risco de seguro
-- **Features**: 36 (idade, sexo, faixas, habilitação, 27 estados)
-- **Categoria**: baixo, médio, alto
-- **Amostras**: 9 motoristas reais
+------------------------------------------------------------------------
 
----
-
-## 💡 Conceitos Aprendidos e Aplicados
-
-✅ **Normalização de dados** - Min-Max scaling para idade  
-✅ **One-hot encoding** - Categóricos nominais (sexo, faixas, localização)  
-✅ **Redes neurais sequenciais** - Camadas densas e funções de ativação  
-✅ **Funções de ativação** - ReLU (camada oculta), Softmax (saída)  
-✅ **Compilação e treinamento** - Adam, Categorical crossentropy  
-✅ **Previsão e probabilidades** - Classificação multiclasse  
-✅ **Gestão de memória** - Disposal de tensores  
-✅ **Escalabilidade** - De 3 para 9 amostras, 7 para 36 features  
-
----
-
-## 🎓 Resumo do Aprendizado
-
-| Aspecto | Aula (aulav2.js) | Prática (myVersion) |
-|---------|---|---|
-| **Estrutura** | Exemplo simples | Aplicação realista |
-| **Features** | 7 | 36 |
-| **Amostras** | 3 | 9 |
-| **Problema** | Categorização genérica | Análise de risco específica |
-| **Domínio** | Teórico | Prático (Seguros) |
-
----
-
-## 🚀 Melhorias Futuras
-
-- [ ] Aumentar dataset para 50+ amostras reais
-- [ ] Validação cruzada (K-Fold cross-validation)
-- [ ] Teste em conjunto de dados separado
-- [ ] Ajuste de hiperparâmetros (epochs, hidden units)
-- [ ] Visualização de métricas (loss, accuracy)
-- [ ] Salvar/carregar modelo treinado
-- [ ] API REST para previsões online
-- [ ] Interface gráfica web
-
----
-
-## 📖 Tecnologias Utilizadas
-
-- **TensorFlow.js** v3+
-- **Node.js** (runtime)
-- **JavaScript ES6+**
-- **Terminal/CLI**
-
----
-
-## 👨‍🎓 Autor
-Filipe - Pós-Graduação em Inteligência Artificial
-
----
-
-**Data**: 10 de março de 2026  
-**Status**: ✅ Funcional | 🎓 Exercício Educacional | 📊 Testado com 95.61% confiança no risco alto</content>
-<filePath">/home/filipe/Área de trabalho/Pos/exemplo-00/README.md
+Ano: **2026**\
+Status: **Projeto Educacional**

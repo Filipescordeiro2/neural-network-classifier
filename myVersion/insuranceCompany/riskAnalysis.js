@@ -1,261 +1,397 @@
 import tf from '@tensorflow/tfjs-node';
+import readline from 'readline';
+import fs from 'fs';
 
 /**
  * ============================================
  * CONFIGURAÇÃO DO MODELO
  * ============================================
  */
+
 const CONFIG = {
-    inputShape: 36,          // 36 features: idade + sexo + 4 faixas etárias + 3 binários (carro/hab) + 27 estados (26 estados + DF)
-    hiddenUnits: 100,        // Aumentei para 100 neurônios (mais complexo que o exemplo original)
-    outputUnits: 3,          // 3 categorias de risco
-    epochs: 200,             // Aumentei para 200 (dataset maior pode precisar de mais iterações)
-    categories: ['baixo', 'medio', 'alto']  // Categorias de risco (alto = alto risco, etc.)
+    inputShape: 36,
+    hiddenUnits: 50,
+    outputUnits: 3,
+    epochs: 150,
+    categories: ['baixo','medio','alto']
 };
 
 /**
  * ============================================
- * FUNÇÃO PARA NORMALIZAR IDADE
+ * NORMALIZAÇÃO DE IDADE
  * ============================================
  */
-function normalizeIdade(idade, min = 18, max = 60) {
-    return (idade - min) / (max - min);
+
+function normalizeIdade(idade,min=18,max=60){
+    return (idade-min)/(max-min);
 }
 
+/**
+ * ============================================
+ * ESTADOS BRASILEIROS
+ * ============================================
+ */
+
+const ESTADOS=[
+'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS',
+'MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC',
+'SP','SE','TO'
+];
 
 /**
  * ============================================
- * DADOS DE TREINAMENTO
+ * CARREGAR DATASET JSON
  * ============================================
  */
-const trainingData = {
-    pessoas: [
-        { nome: 'FILIPE', idade: 24, sexo: 1, faixa18_24: 1, faixa25_30: 0, faixa30_45: 0, faixa46mais: 0, primeiroCarro: 1, habProvisoria: 1, habDefinitiva: 0, localizacao: 'SP' },
-        { nome: 'ANA', idade: 35, sexo: 0, faixa18_24: 0, faixa25_30: 0, faixa30_45: 1, faixa46mais: 0, primeiroCarro: 0, habProvisoria: 0, habDefinitiva: 1, localizacao: 'SP' },
-        { nome: 'CARLOS', idade: 50, sexo: 1, faixa18_24: 0, faixa25_30: 0, faixa30_45: 0, faixa46mais: 1, primeiroCarro: 1, habProvisoria: 0, habDefinitiva: 1, localizacao: 'SP' },
-        { nome: 'OTAVIO', idade: 18, sexo: 1, faixa18_24: 1, faixa25_30: 0, faixa30_45: 0, faixa46mais: 0, primeiroCarro: 1, habProvisoria: 1, habDefinitiva: 0, localizacao: 'SP' },
-        { nome: 'MARIA', idade: 28, sexo: 0, faixa18_24: 0, faixa25_30: 1, faixa30_45: 0, faixa46mais: 0, primeiroCarro: 0, habProvisoria: 0, habDefinitiva: 1, localizacao: 'SP' },
-        { nome: 'JOÃO', idade: 42, sexo: 1, faixa18_24: 0, faixa25_30: 0, faixa30_45: 1, faixa46mais: 0, primeiroCarro: 1, habProvisoria: 0, habDefinitiva: 1, localizacao: 'SP' },
-        { nome: 'LUCIA', idade: 55, sexo: 0, faixa18_24: 0, faixa25_30: 0, faixa30_45: 0, faixa46mais: 1, primeiroCarro: 0, habProvisoria: 0, habDefinitiva: 1, localizacao: 'SP' },
-        { nome: 'PEDRO', idade: 22, sexo: 1, faixa18_24: 1, faixa25_30: 0, faixa30_45: 0, faixa46mais: 0, primeiroCarro: 1, habProvisoria: 1, habDefinitiva: 0, localizacao: 'SP' },
-        { nome: 'SARA', idade: 38, sexo: 0, faixa18_24: 0, faixa25_30: 0, faixa30_45: 1, faixa46mais: 0, primeiroCarro: 1, habProvisoria: 0, habDefinitiva: 1, localizacao: 'SP' }
-    ],
-    
-    // Features normalizadas: [idadeNorm, sexo, faixa18_24, ..., habDef, locAC, locAL, ..., locTO]
-    features: [                                      // Posicoes para estados (27 elementos)
-        [normalizeIdade(24), 1, 1, 0, 0, 0, 1, 1, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // FILIPE (SP=35º)
-        [normalizeIdade(35), 0, 0, 0, 1, 0, 0, 0, 1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // ANA (RJ=19º)
-        [normalizeIdade(50), 1, 0, 0, 0, 1, 1, 0, 1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],  // CARLOS (MG=13º)
-        [normalizeIdade(18), 1, 1, 0, 0, 0, 1, 1, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // OTAVIO (SP=25º)
-        [normalizeIdade(28), 0, 0, 1, 0, 0, 0, 0, 1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // MARIA (RS=21º)
-        [normalizeIdade(42), 1, 0, 0, 1, 0, 1, 0, 1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // JOÃO (CE=6º)
-        [normalizeIdade(55), 0, 0, 0, 0, 1, 0, 0, 1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // LUCIA (BA=5º)
-        [normalizeIdade(22), 1, 1, 0, 0, 0, 1, 1, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1], // PEDRO (PR=16º)
-        [normalizeIdade(38), 0, 0, 0, 1, 0, 1, 0, 1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]  // SARA (PE=17º)
-    ],
-    
-    // Labels: [baixo, medio, alto] (one-hot)
 
-    labels: [
-        [0, 0, 1], // FILIPE → alto (jovem e inexperiente)
-        [0, 1, 0], // ANA → medio
-        [1, 0, 0], // CARLOS → baixo (mais velho e experiente)
-        [0, 0, 1], // OTAVIO → alto (jovem e inexperiente)
-        [0, 1, 0], // MARIA → medio (mulher experiente)
-        [1, 0, 0], // JOÃO → baixo (homem experiente)
-        [1, 0, 0], // LUCIA → baixo (mais velha e experiente)
-        [0, 0, 1], // PEDRO → alto (jovem e inexperiente)
-        [0, 1, 0]  // SARA → medio (mulher de meia idade)
-    ]
+function loadTrainingData(){
+
+    try{
+
+        const data=fs.readFileSync('./trainingData.json','utf8');
+        const json=JSON.parse(data);
+
+        const features=json.dataset.map(d=>d.features);
+        const labels=json.dataset.map(d=>d.label);
+
+        return {features,labels};
+
+    }catch{
+
+        return {features:[],labels:[]};
+
+    }
+
+}
+
+/**
+ * ============================================
+ * SALVAR DATASET JSON
+ * ============================================
+ */
+
+function saveTrainingData(pessoa,features,label,risk){
+
+    let dataset;
+
+    try{
+
+        const data=fs.readFileSync('./trainingData.json','utf8');
+        dataset=JSON.parse(data);
+
+    }catch{
+
+        dataset={dataset:[]};
+
+    }
+
+    const registro={
+
+        input:{
+            nome:pessoa.nome,
+            idade:pessoa.idade,
+            sexo:pessoa.sexo===1?'M':'F',
+            primeiroCarro:pessoa.primeiroCarro===1,
+            habilitacao:pessoa.habProvisoria===1?'PROVISORIA':'DEFINITIVA',
+            estado:pessoa.localizacao
+        },
+
+        features:features,
+
+        label:label,
+
+        risk:risk,
+
+        createdAt:new Date().toISOString()
+
+    };
+
+    dataset.dataset.push(registro);
+
+    if(dataset.dataset.length>5000){
+        dataset.dataset.shift();
+    }
+
+    fs.writeFileSync(
+        './trainingData.json',
+        JSON.stringify(dataset,null,2)
+    );
+
+}
+
+/**
+ * ============================================
+ * INPUT DO USUÁRIO
+ * ============================================
+ */
+
+function getUserInput(){
+
+    const rl=readline.createInterface({
+        input:process.stdin,
+        output:process.stdout
+    });
+
+    return new Promise(resolve=>{
+
+        const pessoa={};
+
+        rl.question('Nome: ',nome=>{
+            pessoa.nome=nome;
+
+            rl.question('Idade: ',idade=>{
+                pessoa.idade=parseInt(idade);
+
+                rl.question('Sexo (M/F): ',sexo=>{
+                    pessoa.sexo=sexo.toUpperCase()==='M'?1:0;
+
+                    rl.question('Primeiro carro? (S/N): ',pc=>{
+                        pessoa.primeiroCarro=pc.toUpperCase()==='S'?1:0;
+
+                        rl.question('Habilitação provisória? (S/N): ',hab=>{
+
+                            const provisoria=hab.toUpperCase()==='S';
+
+                            pessoa.habProvisoria=provisoria?1:0;
+                            pessoa.habDefinitiva=provisoria?0:1;
+
+                            rl.question('Estado (ex SP): ',uf=>{
+
+                                pessoa.localizacao=uf.toUpperCase();
+
+                                rl.close();
+                                resolve(pessoa);
+
+                            });
+
+                        });
+
+                    });
+
+                });
+
+            });
+
+        });
+
+    });
+
+}
+
+/**
+ * ============================================
+ * NORMALIZAR PESSOA
+ * ============================================
+ */
+
+function normalizarPessoa(pessoa){
+
+    const idadeNorm=normalizeIdade(pessoa.idade);
+
+    const faixa18_24=pessoa.idade>=18&&pessoa.idade<=24?1:0;
+    const faixa25_30=pessoa.idade>=25&&pessoa.idade<=30?1:0;
+    const faixa30_45=pessoa.idade>=30&&pessoa.idade<=45?1:0;
+    const faixa46mais=pessoa.idade>45?1:0;
+
+    const binarios=[
+        pessoa.primeiroCarro||0,
+        pessoa.habProvisoria||0,
+        pessoa.habDefinitiva||0
+    ];
+
+    const loc=ESTADOS.map(uf=>pessoa.localizacao===uf?1:0);
+
+    return[
+        idadeNorm,
+        pessoa.sexo,
+        faixa18_24,
+        faixa25_30,
+        faixa30_45,
+        faixa46mais,
+        ...binarios,
+        ...loc
+    ];
+
+}
+
+/**
+ * ============================================
+ * DADOS INICIAIS DE TREINAMENTO
+ * ============================================
+ */
+
+const trainingData={
+
+features:[
+
+[normalizeIdade(24),1,1,0,0,0,1,1,0,...new Array(27).fill(0)],
+[normalizeIdade(35),0,0,0,1,0,0,0,1,...new Array(27).fill(0)],
+[normalizeIdade(50),1,0,0,0,1,1,0,1,...new Array(27).fill(0)]
+
+],
+
+labels:[
+
+[0,0,1],
+[0,1,0],
+[1,0,0]
+
+]
+
 };
 
-
 /**
  * ============================================
- * CONSTRUIR E TREINAR O MODELO
+ * CRIAR E TREINAR MODELO
  * ============================================
  */
 
-async function buildAndTrainModel(inputXs, outputYs) {
-    const model = tf.sequential({
-        layers: [
-            // Camada 1: Input → Hidden
-            // Função de ativação ReLU filtra valores negativos
+async function buildAndTrainModel(xs,ys){
+
+    const model=tf.sequential({
+
+        layers:[
+
             tf.layers.dense({
-                inputShape: [CONFIG.inputShape],
-                units: CONFIG.hiddenUnits,
-                activation: 'relu'
+                inputShape:[CONFIG.inputShape],
+                units:CONFIG.hiddenUnits,
+                activation:'relu'
             }),
-            
-            // Camada 2: Hidden → Output
-            // Softmax normaliza saída em probabilidades (somam 1)
+
             tf.layers.dense({
-                units: CONFIG.outputUnits,
-                activation: 'softmax'
+                units:CONFIG.outputUnits,
+                activation:'softmax'
             })
+
         ]
+
     });
 
-    // Compilar o modelo
     model.compile({
-        optimizer: 'adam',                      // Otimizador adaptativo
-        loss: 'categoricalCrossentropy',        // Perda para classificação multi-classe
-        metrics: ['accuracy']                   // Métrica de desempenho
+
+        optimizer:'adam',
+        loss:'categoricalCrossentropy',
+        metrics:['accuracy']
+
     });
 
-    // Treinar o modelo
-    await model.fit(inputXs, outputYs, {
-        epochs: CONFIG.epochs,
-        verbose: 0,
-        shuffle: true
+    await model.fit(xs,ys,{
+        epochs:CONFIG.epochs,
+        shuffle:true,
+        verbose:0
     });
 
     return model;
-}
 
-
-/**
- * ============================================
- * MAPA DE ESTADOS BRASILEIROS
- * ============================================
- */
-const ESTADOS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
-
-/**
- * ============================================
- * FUNÇÃO PARA NORMALIZAR PESSOA (Adaptada)
- * ============================================
- */
-function normalizarPessoa(pessoa) {
-    // Normalizar idade: (valor - min) / (max - min)
-    // Min=18, Max=60 (conforme CONFIG)
-    const idadeNormalizada = normalizeIdade(pessoa.idade);
-
-    // Sexo: 1 = masculino, 0 = feminino (já vem assim no input)
-    const sexo = pessoa.sexo;
-
-    // One-hot encoding para faixas etárias: [18-24, 25-30, 30-45, >46]
-    const faixasOneHot = [
-        pessoa.faixa18_24 || 0,
-        pessoa.faixa25_30 || 0,
-        pessoa.faixa30_45 || 0,
-        pessoa.faixa46mais || 0
-    ];
-
-    // Binários: [primeiroCarro, habProvisoria, habDefinitiva]
-    const binarios = [
-        pessoa.primeiroCarro || 0,
-        pessoa.habProvisoria || 0,
-        pessoa.habDefinitiva || 0
-    ];
-
-    // One-hot encoding para localização: 27 estados (AC, AL, ..., TO)
-    const localizacaoOneHot = ESTADOS.map(uf => (pessoa.localizacao === uf ? 1 : 0));
-
-    return [idadeNormalizada, sexo, ...faixasOneHot, ...binarios, ...localizacaoOneHot];
 }
 
 /**
  * ============================================
- * FAZER PREVISÃO
+ * PREVISÃO
  * ============================================
  */
-async function predict(model, pessoaFeatures) {
-    // Converter array JavaScript em tensor
-    const tfInput = tf.tensor2d(pessoaFeatures);
-    
-    // Obter predição (vetor de 3 probabilidades)
-    const pred = model.predict(tfInput);
-    const predArray = await pred.array();
-    
-    // Converter em objeto com probabilidade e categoria
-    return predArray[0].map((prob, index) => ({
-        categoria: CONFIG.categories[index],
-        probabilidade: prob,
-        percentual: (prob * 100).toFixed(2)
+
+async function predict(model,features){
+
+    const tensor=tf.tensor2d(features);
+
+    const pred=model.predict(tensor);
+
+    const arr=await pred.array();
+
+    return arr[0].map((p,i)=>({
+
+        categoria:CONFIG.categories[i],
+        probabilidade:p,
+        percentual:(p*100).toFixed(2)
+
     }));
+
 }
 
 /**
  * ============================================
- * TREINAR E ANALISAR RISCO DE NOVA PESSOA
+ * PIPELINE PRINCIPAL
  * ============================================
  */
-async function trainAndSayRisk() {
-    console.log(`🧠 Iniciando treinamento do modelo com amostras de análise...\n`);
 
-    // 1. Preparar dados de treinamento (análise)
-    const inputXs = tf.tensor2d(trainingData.features);
-    const outputYs = tf.tensor2d(trainingData.labels);
+async function trainAndSayRisk(){
 
-    // 2. Treinar o modelo com as amostras
-    console.log(`⏳ Modelo analisando ${trainingData.pessoas.length} amostras de motoristas...`);
-    const model = await buildAndTrainModel(inputXs, outputYs);
-    console.log(`✅ Análise das amostras concluída!\n`);
+    console.log('\n🧠 Treinando modelo...\n');
 
-    // 3. Fazer previsão para uma nova pessoa inserida como input
-    console.log(`📋 Analisando novo motorista:\n`);
-    
-    const novaPessoa = {
-        nome: 'FILIPE TESTE',
-        idade: 18,
-        sexo: 1,
-        faixa18_24: 1,
-        faixa25_30: 0,
-        faixa30_45: 0,
-        faixa46mais: 0,
-        primeiroCarro: 1,
-        habProvisoria: 1,
-        habDefinitiva: 0,
-        localizacao: 'SP'
-    };
+    const jsonData=loadTrainingData();
 
-    console.log(`👤 Nome: ${novaPessoa.nome}`);
-    console.log(`📅 Idade: ${novaPessoa.idade} anos`);
-    console.log(`🏠 Localização: ${novaPessoa.localizacao}`);
-    console.log(`👨 Sexo: ${novaPessoa.sexo === 1 ? 'Masculino' : 'Feminino'}`);
-    console.log(`🚗 Primeiro Carro: ${novaPessoa.primeiroCarro === 1 ? 'Sim' : 'Não'}`);
-    console.log(`📜 Habilitação: ${novaPessoa.habDefinitiva === 1 ? 'Definitiva' : 'Provisória'}\n`);
+    const features=[
+        ...trainingData.features,
+        ...jsonData.features
+    ];
 
-    // Normalizar dados da nova pessoa
-    const pessoaNormalizada = normalizarPessoa(novaPessoa);
-    
-    // Fazer previsão
-    const predictions = await predict(model, [pessoaNormalizada]);
+    const labels=[
+        ...trainingData.labels,
+        ...jsonData.labels
+    ];
 
-    // Ordenar por probabilidade
-    const resultadosOrdenados = predictions
-        .sort((a, b) => b.probabilidade - a.probabilidade);
+    console.log(`📊 Dataset usado: ${features.length} amostras\n`);
 
-    // Exibir resultado
-    console.log(`🎯 ANÁLISE DE RISCO:\n`);
-    resultadosOrdenados.forEach((p, index) => {
-        const riskLevel = p.categoria === 'alto' ? '🔴' : p.categoria === 'medio' ? '🟡' : '🟢';
-        console.log(`${index + 1}. ${riskLevel} ${p.categoria.toUpperCase()}: ${p.percentual}%`);
+    const xs=tf.tensor2d(features);
+    const ys=tf.tensor2d(labels);
+
+    const model=await buildAndTrainModel(xs,ys);
+
+    const pessoa=await getUserInput();
+
+    const pessoaNorm=normalizarPessoa(pessoa);
+
+    const predictions=await predict(model,[pessoaNorm]);
+
+    const ordenado=predictions.sort((a,b)=>b.probabilidade-a.probabilidade);
+
+    console.log('\n🎯 RESULTADO\n');
+
+    ordenado.forEach((p,i)=>{
+
+        const icon=p.categoria==='alto'?'🔴':p.categoria==='medio'?'🟡':'🟢';
+
+        console.log(`${i+1}. ${icon} ${p.categoria.toUpperCase()} ${p.percentual}%`);
+
     });
 
-    const mainRisk = resultadosOrdenados[0];
-    console.log(`\n⚠️  Risco Principal: ${mainRisk.categoria.toUpperCase()}`);
+    const principal=ordenado[0];
 
-    // Limpeza de tensores
-    inputXs.dispose();
-    outputYs.dispose();
+    console.log(`\n⚠️ Risco principal: ${principal.categoria.toUpperCase()}`);
 
-    console.log(`\n✅ Análise finalizada!`);
+    const label=CONFIG.categories.map(c=>c===principal.categoria?1:0);
+
+    saveTrainingData(
+        pessoa,
+        pessoaNorm,
+        label,
+        principal.categoria
+    );
+
+    xs.dispose();
+    ys.dispose();
+
 }
 
 /**
  * ============================================
- * EXECUTAR PROGRAMA PRINCIPAL
+ * EXECUÇÃO
  * ============================================
  */
-async function main() {
-    try {
+
+async function main(){
+
+    try{
+
         await trainAndSayRisk();
-    } catch (error) {
-        console.error('❌ Erro durante a execução:', error);
+
+    }catch(e){
+
+        console.error(e);
+
     }
+
 }
 
-// Executar programa
-main().catch(console.error);
+main();
